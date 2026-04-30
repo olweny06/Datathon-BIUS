@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import re
 
 
 def add_calendar_features(df):
@@ -61,10 +62,6 @@ def add_calendar_features(df):
 
     return df
 
-
-import re
-import numpy as np
-import pandas as pd
 
 promo_cols = [
     "is_spring_sale",
