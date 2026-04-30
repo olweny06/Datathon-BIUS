@@ -29,6 +29,13 @@ def inverse_transform_target(y_pred):
     return np.clip(np.expm1(y_pred), 0, None)
 
 
+def raw_mae_eval(y_true, y_pred):
+    y_true_raw = inverse_transform_target(y_true)
+    y_pred_raw = inverse_transform_target(y_pred)
+    mae = np.mean(np.abs(y_true_raw - y_pred_raw))
+    return "raw_mae", mae, False
+
+
 def train_lgbm(train_df, valid_df, target_col, params):
     feature_cols = get_feature_cols(train_df, target_col)
 
@@ -44,7 +51,7 @@ def train_lgbm(train_df, valid_df, target_col, params):
         X_train,
         y_train,
         eval_set=[(X_valid, y_valid)],
-        eval_metric="mae",
+        eval_metric=raw_mae_eval,
         callbacks=[
             lgb.early_stopping(stopping_rounds=150, verbose=False),
             lgb.log_evaluation(period=0),
@@ -57,7 +64,12 @@ def train_lgbm(train_df, valid_df, target_col, params):
 def predict_lgbm(model, df, feature_cols):
     X = df[feature_cols]
 
-    pred_log = model.predict(X, num_iteration=getattr(model, "  best_iteration_", None))
+    best_iter = getattr(model, "best_iteration_", None)
+
+    if best_iter is not None and best_iter <= 0:
+        best_iter = None
+
+    pred_log = model.predict(X, num_iteration=best_iter)
 
     pred = inverse_transform_target(pred_log)
 
