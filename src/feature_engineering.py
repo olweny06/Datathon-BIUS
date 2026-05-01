@@ -102,27 +102,28 @@ def _episode_ids_from_active(active):
 
 def add_promo_phase_position_features(df, promo_cols=promo_cols, prefix="promo_pos"):
     """
-    Thêm feature mô tả vị trí của từng ngày trong vòng đời campaign.
+    Các feature này được thêm vì tác động của khuyến mãi lên doanh thu không chỉ phụ thuộc vào việc hôm đó có promo hay không,
+    mà còn phụ thuộc vào ngày đó đang nằm ở giai đoạn nào trong vòng đời campaign.
 
-    Feature tổng quát:
-    - promo_active_any
-    - promo_day_frac
-    - promo_days_to_end
-    - promo_is_first_7d
-    - promo_is_last_7d
-    - promo_phase_early_any
-    - promo_phase_mid_any
-    - promo_phase_late_any
+     Feature tổng quát:
+     - promo_active_any: có campaign nào đang chạy không?
+     - promo_day_frac : ngày hiện tại nằm ở bao nhiêu phần trăm tiến trình campaign
+     - promo_days_to_end: còn bao nhiêu ngày nữa kết thúc campaign
+     - promo_is_first_7d: đánh dấu 7 ngày đầu của campaign.
+     - promo_is_last_7d: đánh dấu 7 ngày cuối của campaign.
+     - promo_phase_early_any: pha đầu của campaign
+     - promo_phase_mid_any: pha giữa của campaign
+     - promo_phase_late_any: pha cuối của campaign
 
-    Feature riêng cho từng promo:
-    - day_idx
-    - day_frac
-    - days_to_end
-    - first_7d
-    - last_7d
-    - phase_early
-    - phase_mid
-    - phase_late
+     Feature riêng cho từng promo: để mô hình phân biệt rằng mỗi loại campaign có vòng đời tác động khác nhau
+     - day_idx
+     - day_frac
+     - days_to_end
+     - first_7d
+     - last_7d
+     - phase_early
+     - phase_mid
+     - phase_late
     """
 
     out = df.copy()
@@ -450,6 +451,15 @@ def add_order_templates(df, daily_fit):
     # Chỉ fit các template lịch sử bằng dữ liệu có sẵn đến cuối tập train của fold.
     # Trong cross-validation, daily_fit chỉ được chứa order history có Date <= train_end.
     # Mục tiêu là tránh dùng thông tin validation/tương lai khi tạo aggregate features.
+    """
+    Nhóm đặc trưng tpl_*_md được xây dựng để mô hình học “mẫu hành vi mua hàng lịch sử” trong các ngày có bối cảnh tương tự.
+    Thay vì chỉ dự báo doanh thu từ ngày tháng hoặc cờ khuyến mãi, nhóm sử dụng các thống kê trung vị từ dữ liệu đơn hàng như
+    số đơn, số sản phẩm bán ra, số sản phẩm khác nhau, số lượng trên mỗi đơn, số dòng sản phẩm trên mỗi đơn, mức giá đơn vị,
+    tỷ lệ giảm giá và biên lợi nhuận tĩnh của sản phẩm. Việc dùng median giúp đặc trưng ổn định hơn trước các ngày có doanh thu
+    hoặc số lượng bán đột biến. Nhóm feature này cung cấp cho mô hình tín hiệu trực tiếp hơn về demand scale, basket behavior và product mix,
+    từ đó cải thiện khả năng dự báo doanh thu.
+    """
+
     df = df.copy()
     daily_fit = daily_fit.copy()
 
